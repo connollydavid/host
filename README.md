@@ -106,11 +106,46 @@ rewriting no software commit.
 
 ### 3. Wire the tools
 
-Add the verification tools as submodules (`tools/host-lint`,
-`tools/host-lifecycle`, `tools/allium`, `tools/specula`) and **generate** their
-skill symlinks after materialization (do not git-track a symlink into a path that
-a fresh clone has not materialized). Install the `host-lint` git hooks
-(`pre-commit`, `commit-msg`) so new commits are gated from here on.
+Add the four verification tools as submodules (reference, do not vendor: each is
+pinned to a commit), then **generate** their skill symlinks after materialization
+(do not git-track a symlink into a path that a fresh clone has not materialized):
+
+```
+tools/host-lint        github.com/connollydavid/host-lint        (Rust)
+tools/host-lifecycle   github.com/connollydavid/host-lifecycle   (Rust)
+tools/allium           github.com/juxt/allium                    (Rust CLI + agent skill)
+tools/specula          github.com/specula-org/Specula            (TLA+, runs on the JVM)
+```
+
+The submodule gives you a tool's specs and its driver, not the **binary
+component** that runs them. Two of the four are pure Rust binaries; the other two
+carry a runtime you install separately. Pin the exact versions below: they are the
+set this methodology is verified against. Install each:
+
+- **host-lint, host-lifecycle** (hygiene + lifecycle): the two Rust binaries from
+  "What you need". Build with `cargo build --release` in each submodule under Rust
+  `1.95.0` (the digest-pinned `rust:1.95.0` container is the reproducible-build
+  anchor; CI builds in it), or download a release. Then install the `host-lint`
+  git hooks with `host-lifecycle software --install-hooks .` (copies `pre-commit`,
+  `commit-msg`, and the built binary) so new commits are gated from here on.
+- **allium** (requirements lane, behavioural specs / property-based): the
+  spec-authoring skill installs into the agent (Claude Code:
+  `/plugin install allium`; other editors: `npx skills add juxt/allium`). The
+  `.allium` specs are checked by the `allium` CLI, a standalone Rust binary with
+  no runtime dependency: `cargo install allium-cli@3.4.2`, or
+  `brew tap juxt/allium && brew install allium`.
+- **specula** (timing and concurrency lane, TLA+): the `.tla` specs are
+  model-checked by TLC, a Java tool. Install a Temurin `21` JDK and
+  `tla2tools.jar` `v1.8.0` from the `tlaplus/tlaplus` releases, then run
+  `java -cp tla2tools.jar tlc2.TLC -config <spec>.cfg <spec>.tla`. CI runs exactly
+  these versions (`actions/setup-java` Temurin `21` plus the pinned `v1.8.0` jar);
+  see the Specula workflow.
+
+The pins CI exercises directly are Rust `1.95.0` (host-lint, host-lifecycle, and
+the reproducible build) and TLA+ `tla2tools v1.8.0` on Temurin `21` (the timing
+lane). The requirements lane in this reference host runs on Rust `proptest`, so
+`allium-cli 3.4.2` is its current-release pin rather than one this host's CI
+exercises; adopt it when you wire the allium lane.
 
 ### 4. Apply the migration, in two layers
 
