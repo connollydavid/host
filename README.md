@@ -40,7 +40,13 @@ Pick the case first, then the mode.
 | **b** | a `CLAUDE.md` that predates this methodology | **merge** its rules with the spine **(human)** |
 | **c** | a `.host` stamp (it adopted an earlier revision) | **upgrade** by diffing template revisions |
 
-`host-lifecycle classify <dir>` prints `a`, `b`, or `c`.
+`host-lifecycle classify <dir>` prints `a`, `b`, or `c` — **unless** the target is
+itself a software repository (a root build manifest such as `Cargo.toml` /
+`package.json` / `go.mod` / `pyproject.toml`, with no `.host` stamp and no
+`.host-software` recipe). In that case it **refuses** (exits non-zero, prints the
+steps below) rather than a case letter: a host is a *separate* meta-repo, and you
+must never adopt a software repo in place. Embed the software as the Where room of
+a new host instead (step 2) — the refusal message spells out exactly how.
 
 | Mode | What it touches | Use when |
 |---|---|---|
@@ -74,7 +80,8 @@ adopted  = "YYYY-MM-DD"
 
 ### 0. Preview
 
-- `host-lifecycle classify <dir>` → the case.
+- `host-lifecycle classify <dir>` → the case (or a refusal if the target is a
+  software repo — stop and follow its steps; do not adopt software in place).
 - `host-lint --all` → naming tells in **live tracked files** (you will fix these).
 - `host-lint --log` → tells in **history** (informational; do not rewrite unless Deep).
 - Write down the **rename map** (each ordinal-named file → its content-named home
