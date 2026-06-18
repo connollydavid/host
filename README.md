@@ -111,6 +111,14 @@ already a gitlink submodule, convert it in place (preserve the pin, de-register
 the gitlink, write `.host-software`, gitignore the trees), creating, moving, or
 rewriting no software commit.
 
+Every worktree **must** surface *under* the host root — never a bare external
+path. When a backing store has to live elsewhere (another filesystem or platform,
+e.g. a native-Windows build that cannot sit on a WSL share), record it on the
+parallel line as `worktree = <dir> <branch> <pin> store=<path> [host=<os>]`:
+`--materialize` realises the store at `<path>` and the in-tree `<dir>` as a
+symlink/junction to it, so an edit through `<dir>/…` still lands in the tree under
+test. `software --check` HAZARDs any worktree path that escapes the root.
+
 ### 3. Wire the tools
 
 Add the four verification tools as submodules (reference, do not vendor: each is
