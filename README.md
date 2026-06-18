@@ -107,8 +107,10 @@ rewriting no software commit.
 ### 3. Wire the tools
 
 Add the four verification tools as submodules (reference, do not vendor: each is
-pinned to a commit), then **generate** their skill symlinks after materialization
-(do not git-track a symlink into a path that a fresh clone has not materialized):
+pinned to a commit), then **generate** their skill symlinks with `link-skills.sh`
+after materialization (do not git-track a symlink into a path that a fresh clone
+has not materialized). allium, specula and host-lifecycle each ship Claude skills
+under `skills/`, so an agent drives them through those skills — not from memory:
 
 ```
 tools/host-lint        github.com/connollydavid/host-lint        (Rust)
@@ -128,18 +130,29 @@ set this methodology is verified against. Install each:
   anchor; CI builds in it), or download a release. Then install the `host-lint`
   git hooks with `host-lifecycle software --install-hooks .` (copies `pre-commit`,
   `commit-msg`, and the built binary) so new commits are gated from here on.
-- **allium** (requirements lane, behavioural specs / property-based): the
-  spec-authoring skill installs into the agent (Claude Code:
-  `/plugin install allium`; other editors: `npx skills add juxt/allium`). The
-  `.allium` specs are checked by the `allium` CLI, a standalone Rust binary with
-  no runtime dependency: `cargo install allium-cli@3.4.2`, or
+- **host-lifecycle skills**: `tools/host-lifecycle` also ships one skill per
+  lifecycle phase — `classify`, `adopt`, `embed`, `remap`, `verify`, `publish`,
+  `upgrade` — wired by the same `link-skills.sh`. Drive each phase through its
+  skill and command; the phases are **unconditional** (no opt-out).
+- **allium** (requirements lane, behavioural specs / property-based): its skills
+  (`elicit`/`distill`/`tend`/`weed`/`propagate`) come from the `tools/allium`
+  submodule via `link-skills.sh` — author and maintain `.allium` through them, not
+  by hand (Claude Code users may instead `/plugin install allium`). The `.allium`
+  specs are checked by the `allium` CLI: `cargo install allium-cli@3.4.2`, or
   `brew tap juxt/allium && brew install allium`.
-- **specula** (timing and concurrency lane, TLA+): the `.tla` specs are
-  model-checked by TLC, a Java tool. Install a Temurin `21` JDK and
-  `tla2tools.jar` `v1.8.0` from the `tlaplus/tlaplus` releases, then run
-  `java -cp tla2tools.jar tlc2.TLC -config <spec>.cfg <spec>.tla`. CI runs exactly
-  these versions (`actions/setup-java` Temurin `21` plus the pinned `v1.8.0` jar);
-  see the Specula workflow.
+- **specula** (timing and concurrency lane, TLA+): its TLA+ workflow skills also
+  come from the `tools/specula` submodule. The `.tla` specs are model-checked by
+  TLC, a Java tool: install a Temurin `21` JDK and `tla2tools.jar` `v1.8.0` from
+  the `tlaplus/tlaplus` releases, then run `java -cp tla2tools.jar tlc2.TLC -config
+  <spec>.cfg <spec>.tla`. CI runs exactly these versions (`actions/setup-java`
+  Temurin `21` plus the pinned `v1.8.0` jar); see the Specula workflow.
+
+**Lanes are mandatory once a spec exists; phases always.** When a component carries
+a `.allium`, its CI MUST run `allium check` + `analyse` + `plan`, **every** `allium
+plan` obligation MUST be dispositioned in a `<spec>.obligations` manifest (checked
+by `host-lifecycle obligations <spec> --tests <dir>`), and `software --check`
+HAZARDs a `.allium` with no manifest; a `.tla` MUST have a TLC lane. The lifecycle
+phases above are unconditional. The full rules live in the template's `CLAUDE.md`.
 
 The pins CI exercises directly are Rust `1.95.0` (host-lint, host-lifecycle, and
 the reproducible build) and TLA+ `tla2tools v1.8.0` on Temurin `21` (the timing
@@ -173,7 +186,10 @@ entry, so the migration is auditable from a fresh session.
 ### 6. Verify
 
 - `host-lifecycle validate plan/` and `host-lifecycle validate call/` → `ok`.
-- `host-lifecycle software --check` → each software worktree at its pin, no `HAZARD`.
+- `host-lifecycle software --check` → each worktree at its pin, no `HAZARD` (this
+  also enforces the spec lanes and the `.obligations` manifest).
+- For each `.allium`, `host-lifecycle obligations <spec> --tests <dir>` → every
+  obligation dispositioned.
 - `host-lint --all` → clean on live files (the record excluded via `.host-lintignore`).
 - A throwaway commit with a tell in its message → the hook blocks it.
 - If the repo ships an mdBook site, it builds.
