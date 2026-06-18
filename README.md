@@ -1,4 +1,4 @@
-# host — turn a repo into an agentic project, and keep it current
+# host: turn a repo into an agentic project, and keep it current
 
 Point an agent or a patient human at this one file. Follow it in order, and you
 end with **an agentic project** (e.g. `agentic-acme`): a repo carrying the methodology's techniques
@@ -22,14 +22,14 @@ steps that apply them.
 
 - `git`, and network access to the template URL above.
 - The `host-lifecycle` and `host-lint` binaries (download from their GitHub
-  releases, or build them). `host-lifecycle` does the mechanical work — classify,
-  scaffold, stamp, number, upgrade — token-free. `host-lint` does the audit.
+  releases, or build them). `host-lifecycle` does the mechanical work (classify,
+  scaffold, stamp, number, upgrade), token-free. `host-lint` does the audit.
 
 ## Two things vary
 
-- **Case** — what governance the repo already has (its starting state). Decides
+- **Case**: what governance the repo already has (its starting state). Decides
   how you establish governance.
-- **Mode** — how much you change, and whether history moves (the blast radius).
+- **Mode**: how much you change, and whether history moves (the blast radius).
   Decides how you apply the audit.
 
 Pick the case first, then the mode.
@@ -44,20 +44,20 @@ Pick the case first, then the mode.
 
 | Mode | What it touches | Use when |
 |---|---|---|
-| **Preview** | nothing (report only) | always — run it first |
+| **Preview** | nothing (report only) | always; run it first |
 | **Shallow PR** *(default)* | one branch/PR; live files only; history untouched | almost always |
 | **Staged** | several PRs; live files only | the live diff is too large to review in one PR |
 | **Deep rewrite** | history (archive-first, force-push) | only when history coherence is worth more than its provenance |
 
 **Selection rule.** Default to **Shallow**. Go to **Staged** when the live diff is
 too big to review in one sitting. Choose **Deep** *only* when rewriting history
-buys coherence worth more than the disruption — and **never** on history carrying
+buys coherence worth more than the disruption, and **never** on history carrying
 provenance you do not control (an upstream patch series, tags others have pulled).
 Deep always means: push a protected `archive/` branch first, then rewrite, then
 force-push with lease. History is **immutable by default**; outside Deep, tells in
 the log are *acknowledged*, not rewritten.
 
-## The stamp — `.host`
+## The stamp: `.host`
 
 A host records which template revision it adopted, at the repo root:
 
@@ -83,14 +83,14 @@ adopted  = "YYYY-MM-DD"
 ### 1. Establish governance (by case)
 
 - **(a)** Copy the template's `CLAUDE.md` in unchanged at the chosen revision.
-  Then find the repo's implicit conventions — build, test, style — by reading the
+  Then find the repo's implicit conventions (build, test, style) by reading the
   code or asking the human, and record them under a project-specifics heading. Do
   not impose a rule that contradicts the repo's existing style.
 - **(b) (human)** Merge. For each rule in the existing `CLAUDE.md`, decide:
   *subsumed* by the spine (drop it, note it in provenance), *project-specific*
   (keep it under the project-specifics heading), or *conflicts* (stop, get a human
   ruling). Preserve any attribution or license the old file carried.
-- **(c)** Upgrade — see **Upgrading** below; the ledger drives it.
+- **(c)** Upgrade: see **Upgrading** below; the ledger drives it.
 
 ### 2. Scaffold the rooms and embed the software
 
@@ -100,39 +100,39 @@ with worktrees**: `<name>.git/` plus the canonical worktree `<name>/` and any
 parallel worktrees. Commit a `.host-software` recipe with one `[software "<name>"]`
 stanza per component (URL, pinned SHA, worktree set); gitignore the trees;
 materialize with `host-lifecycle software --materialize`. If the software is
-already a gitlink submodule, convert it in place — preserve the pin, de-register
-the gitlink, write `.host-software`, gitignore the trees — creating, moving, or
+already a gitlink submodule, convert it in place (preserve the pin, de-register
+the gitlink, write `.host-software`, gitignore the trees), creating, moving, or
 rewriting no software commit.
 
 ### 3. Wire the tools
 
-Add the verification tools as submodules — `tools/host-lint`,
-`tools/host-lifecycle`, `tools/allium`, `tools/specula` — and **generate** their
+Add the verification tools as submodules (`tools/host-lint`,
+`tools/host-lifecycle`, `tools/allium`, `tools/specula`) and **generate** their
 skill symlinks after materialization (do not git-track a symlink into a path that
 a fresh clone has not materialized). Install the `host-lint` git hooks
 (`pre-commit`, `commit-msg`) so new commits are gated from here on.
 
 ### 4. Apply the migration, in two layers
 
-**Live layer — rename with the dictionary.** Turn the rename map into a
+**Live layer: rename with the dictionary.** Turn the rename map into a
 `.host-remap` dictionary (`old => new` per line). `git mv` each ordinal-named file
 to its content-named home, then `host-lifecycle remap --check <dir>` until clean
 (disposition each remaining tell: a dictionary entry, a `.host-lint-allow` entry
 for genuine vocabulary, or an excluded path). Commit (the clean tree is the
-verbatim archive), then `host-lifecycle remap --apply <dir>` — only the declared
-substitutions, map-only by construction. Commit, then `git rm .host-remap` (its
+verbatim archive), then run `host-lifecycle remap --apply <dir>`, which makes only
+the declared substitutions, map-only by construction. Commit, then `git rm .host-remap` (its
 durable copy goes in the `call/` decision). Shallow: one PR. Staged: split
 governance → tooling → bulk rename. Deep (human): archive-first, then rewrite
 history too.
 
-**Record layer — exclude, don't rewrite.** The append-only record (`MEMORY.md`,
+**Record layer: exclude, don't rewrite.** The append-only record (`MEMORY.md`,
 closed milestone bodies) is history; exclude it from the audit with a
 `.host-lintignore` rather than rewriting it.
 
 ### 5. Stamp and record
 
-The stamp is already written — you wrote it when you scaffolded the rooms. Record
-a `call/` decision — "adopted template @ `<revision>`" — and add a `MEMORY.md`
+The stamp is already written: you wrote it when you scaffolded the rooms. Record
+a `call/` decision ("adopted template @ `<revision>`") and add a `MEMORY.md`
 entry, so the migration is auditable from a fresh session.
 
 ### 6. Verify
@@ -146,8 +146,8 @@ entry, so the migration is auditable from a fresh session.
 ## Upgrading
 
 Adopting is one event; the template moves on. To upgrade, re-apply the spine
-changes across the revision span *and* the **structural migrations** it introduced
-— a doc diff shows the prose, not the actions. The template's `UPGRADING.md` is
+changes across the revision span *and* the **structural migrations** it introduced;
+a doc diff shows the prose, not the actions. The template's `UPGRADING.md` is
 the ledger of those actions, one `[upgrade "<revision>"]` stanza each.
 
 1. Fetch the template to the target revision.
