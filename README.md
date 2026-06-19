@@ -117,7 +117,9 @@ e.g. a native-Windows build that cannot sit on a WSL share), record it on the
 parallel line as `worktree = <dir> <branch> <pin> store=<path> [host=<os>]`:
 `--materialize` realises the store at `<path>` and the in-tree `<dir>` as a
 symlink/junction to it, so an edit through `<dir>/…` still lands in the tree under
-test. `software --check` HAZARDs any worktree path that escapes the root.
+test. `host=<os>` (optional) is the OS that *materializes* the store — where you run
+`host-lifecycle` — not the build platform; a Windows Dev Drive reached from WSL is
+`host=linux`. `software --check` HAZARDs any worktree path that escapes the root.
 
 ### 3. Wire the tools
 
@@ -211,18 +213,27 @@ entry, so the migration is auditable from a fresh session.
 
 ## Upgrading
 
-Adopting is one event; the template moves on. To upgrade, re-apply the spine
-changes across the revision span *and* the **structural migrations** it introduced;
-a doc diff shows the prose, not the actions. The template's `UPGRADING.md` is
-the ledger of those actions, one `[upgrade "<revision>"]` stanza each.
+Adopting is one event; the template moves on. The `.host` stamp records **what you
+have applied**: a `baseline` ledger entry (every entry at or before its position in
+`UPGRADING.md` counts applied) plus an optional `applied` set of entries taken out of
+order. The template's `UPGRADING.md` is the ledger of actions, one `[upgrade
+"<revision>"]` stanza each, ordered by file position; a stanza may declare
+`independent`/`depends` and a `verify` post-condition.
 
 1. Fetch the template to the target revision.
-2. `host-lifecycle upgrade <dir>` prints every ledger entry **newer** than the
-   repo's stamped revision (by git ancestry, so same-day revisions order right).
-3. Apply each printed entry's action, in order.
+2. `host-lifecycle upgrade <dir>` lists every ledger entry **not yet applied**, by
+   ledger position (never git ancestry). A legacy single-`revision` stamp is migrated
+   once to a `baseline`. `upgrade --next` prints the single next safe action.
+3. Apply an entry, then record it: `host-lifecycle upgrade --record <id>` (id,
+   unambiguous prefix, or ledger ordinal). The tool validates the id, refuses if a
+   `depends` is unapplied, runs the entry's `verify` — or requires `--unverified
+   call/NNNN` when it has none — and appends an append-only claim. **Never hand-edit
+   the stamp.** A late `independent` entry may be cherry-applied without an earlier
+   unrelated one; deferred entries stay pending and re-list (fail-safe), and
+   `upgrade --advance` later compacts a contiguous applied run into the `baseline`.
 4. Re-apply the spine doc changes across the span; leave project-specifics alone.
-5. Re-stamp `.host` to the target revision; record it in `call/` and
-   `MEMORY.md`.
+5. `host-lifecycle software --check` re-checks every recorded claim; record the
+   upgrade in `call/` and `MEMORY.md`.
 
 The ledger lives with the techniques that generate it, in the template. This file
 does not change when the template adds an entry; only the template does.
