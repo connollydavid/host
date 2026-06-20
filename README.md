@@ -134,6 +134,7 @@ tools/host-lint        github.com/connollydavid/host-lint        (Rust)
 tools/host-lifecycle   github.com/connollydavid/host-lifecycle   (Rust)
 tools/allium           github.com/juxt/allium                    (Rust CLI + agent skill)
 tools/specula          github.com/specula-org/Specula            (TLA+, runs on the JVM)
+tools/host-prove       github.com/connollydavid/host-prove       (deep-verification rungs; opt-in)
 ```
 
 The submodule gives you a tool's specs and its driver, not the **binary
@@ -163,13 +164,25 @@ set this methodology is verified against. Install each:
   the `tlaplus/tlaplus` releases, then run `java -cp tla2tools.jar tlc2.TLC -config
   <spec>.cfg <spec>.tla`. CI runs exactly these versions (`actions/setup-java`
   Temurin `21` plus the pinned `v1.8.0` jar); see the Specula workflow.
+- **host-prove** (deeper rungs, **opt-in**): above the bounded lanes, `tools/host-prove`
+  drives three heavier verifiers as skills — **Apalache** (symbolic/parametric TLA+ via
+  SMT), **TLAPS** (`tlapm`, unbounded proof; authoring needs a strong model), and a
+  target-specific **code-conformance** verifier (Rust → **Kani**). Each skill turns the
+  tool's output into one machine-readable verdict, so a rung runs down to a small model.
+  Wire the submodule and `link-skills.sh` only when you declare a rung by dispositioning
+  an obligation `kani:`/`apalache:`/`tlaps:`. Verifiers install from official prebuilt
+  binaries pinned by version + SHA256 (no Docker).
 
 **Lanes are mandatory once a spec exists; phases always.** When a component carries
 a `.allium`, its CI MUST run `allium check` + `analyse` + `plan`, **every** `allium
 plan` obligation MUST be dispositioned in a `<spec>.obligations` manifest (checked
 by `host-lifecycle obligations <spec> --tests <dir>`), and `software --check`
-HAZARDs a `.allium` with no manifest; a `.tla` MUST have a TLC lane. The lifecycle
-phases above are unconditional. The full rules live in the template's `CLAUDE.md`.
+HAZARDs a `.allium` with no manifest; a `.tla` MUST have a TLC lane. A declared
+deeper rung is the same rule one level up: an obligation dispositioned
+`kani:`/`apalache:`/`tlaps:` MUST have its CI lane (`cargo kani` / `apalache-mc` /
+`tlapm`) or `software --check` HAZARDs it — but only once declared; the rungs are
+opt-in and inert otherwise. The lifecycle phases above are unconditional. The full
+rules live in the template's `CLAUDE.md`.
 
 The pins CI exercises directly are Rust `1.95.0` (host-lint, host-lifecycle, and
 the reproducible build) and TLA+ `tla2tools v1.8.0` on Temurin `21` (the timing
