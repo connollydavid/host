@@ -1,4 +1,4 @@
-# host: turn a repo into an agentic project, and keep it current
+# host: keep a repo an agentic project
 
 Point an agent or a patient human at this one file. Follow it in order, and you
 end with **an agentic project** (e.g. `agentic-acme`): a repo carrying the methodology's techniques
