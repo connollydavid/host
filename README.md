@@ -46,7 +46,8 @@ itself a software repository (a root build manifest such as `Cargo.toml` /
 `.host-software` recipe). In that case it **refuses** (exits non-zero, prints the
 steps below) rather than a case letter: a host is a *separate* meta-repo, and you
 must never adopt a software repo in place. Embed the software as the Where room of
-a new host instead (step 2) — the refusal message spells out exactly how.
+a new host instead (the *Scaffold the rooms and embed the software* step, below) —
+the refusal message spells out exactly how.
 
 | Mode | What it touches | Use when |
 |---|---|---|
