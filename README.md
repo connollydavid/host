@@ -79,16 +79,18 @@ adopted  = "YYYY-MM-DD"
 
 ## The procedure
 
-### 0. Preview
+### Preview
 
 - `host-lifecycle classify <dir>` → the case (or a refusal if the target is a
   software repo — stop and follow its steps; do not adopt software in place).
 - `host-lint --all` → naming tells in **live tracked files** (you will fix these).
+- `host-lint --prose` → **prose tropes** in authored docs (the LLM-slop markers it
+  flags). You will clean these to zero, the way you clear naming tells.
 - `host-lint --log` → tells in **history** (informational; do not rewrite unless Deep).
 - Write down the **rename map** (each ordinal-named file → its content-named home
   under `plan/`) and, for case (b), the **merge plan**. Apply nothing yet.
 
-### 1. Establish governance (by case)
+### Establish governance (by case)
 
 - **(a)** Copy the template's `CLAUDE.md` in unchanged at the chosen revision.
   Then find the repo's implicit conventions (build, test, style) by reading the
@@ -100,7 +102,7 @@ adopted  = "YYYY-MM-DD"
   ruling). Preserve any attribution or license the old file carried.
 - **(c)** Upgrade: see **Upgrading** below; the ledger drives it.
 
-### 2. Scaffold the rooms and embed the software
+### Scaffold the rooms and embed the software
 
 `host-lifecycle adopt <dir> <revision>` creates `cast/ plan/ call/` idempotently
 and writes the stamp. Then embed the software in the *Where* slot as a **bare store
@@ -122,7 +124,7 @@ test. `host=<os>` (optional) is the OS that *materializes* the store — where y
 `host-lifecycle` — not the build platform; a Windows Dev Drive reached from WSL is
 `host=linux`. `software --check` HAZARDs any worktree path that escapes the root.
 
-### 3. Wire the tools
+### Wire the tools
 
 Add the four verification tools as submodules (reference, do not vendor: each is
 pinned to a commit), then **generate** their skill symlinks with `link-skills.sh`
@@ -191,7 +193,7 @@ lane). The requirements lane in this reference host runs on Rust `proptest`, so
 `allium-cli 3.4.2` is its current-release pin rather than one this host's CI
 exercises; adopt it when you wire the allium lane.
 
-### 4. Apply the migration, in two layers
+### Apply the migration, in three layers
 
 **Live layer: rename with the dictionary.** Turn the rename map into a
 `.host-remap` dictionary (`old => new` per line). `git mv` each ordinal-named file
@@ -204,17 +206,23 @@ durable copy goes in the `call/` decision). Shallow: one PR. Staged: split
 governance → tooling → bulk rename. Deep (human): archive-first, then rewrite
 history too.
 
-**Record layer: exclude, don't rewrite.** The append-only record (`MEMORY.md`,
-closed milestone bodies) is history; exclude it from the audit with a
-`.host-lintignore` rather than rewriting it.
+**Prose layer: clean the slop.** `host-lint --prose` flags the LLM-slop prose tropes
+(decoration dashes and arrows, tricolons, and the rest) in authored docs. Reword them
+to plain prose so the docs read as written, not generated: **zero tropes**, the same
+bar as the naming audit. The append-only record is excepted (below).
 
-### 5. Stamp and record
+**Record layer: exclude, don't rewrite.** The append-only record (`MEMORY.md`, closed
+milestone bodies) is history, and `MEMORY.md` is the **agent's own working memory**;
+exclude it from both the naming audit and the prose audit with a `.host-lintignore`,
+rather than rewriting it.
+
+### Stamp and record
 
 The stamp is already written: you wrote it when you scaffolded the rooms. Record
 a `call/` decision ("adopted template @ `<revision>`") and add a `MEMORY.md`
 entry, so the migration is auditable from a fresh session.
 
-### 6. Verify
+### Verify
 
 - `host-lifecycle validate plan/` and `host-lifecycle validate call/` → `ok`.
 - `host-lifecycle software --check` → each worktree at its pin, no `HAZARD` (this
@@ -222,6 +230,7 @@ entry, so the migration is auditable from a fresh session.
 - For each `.allium`, `host-lifecycle obligations <spec> --tests <dir>` → every
   obligation dispositioned.
 - `host-lint --all` → clean on live files (the record excluded via `.host-lintignore`).
+- `host-lint --prose` → **zero prose tropes** in authored docs (the agent's `MEMORY.md` excepted).
 - A throwaway commit with a tell in its message → the hook blocks it.
 - If the repo ships an mdBook site, it builds.
 
