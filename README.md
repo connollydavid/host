@@ -40,13 +40,13 @@ Pick the case first, then the mode.
 | **b** | a `CLAUDE.md` that predates this methodology | **merge** its rules with the spine **(human)** |
 | **c** | a `.host` stamp (it adopted an earlier revision) | **upgrade** by diffing template revisions |
 
-`host-lifecycle classify <dir>` prints `a`, `b`, or `c` — **unless** the target is
+`host-lifecycle classify <dir>` prints `a`, `b`, or `c`, **unless** the target is
 itself a software repository (a root build manifest such as `Cargo.toml` /
 `package.json` / `go.mod` / `pyproject.toml`, with no `.host` stamp and no
 `.host-software` recipe). In that case it **refuses** (exits non-zero, prints the
 steps below) rather than a case letter: a host is a *separate* meta-repo, and you
 must never adopt a software repo in place. Embed the software as the Where room of
-a new host instead (the *Scaffold the rooms and embed the software* step, below) —
+a new host instead (the *Scaffold the rooms and embed the software* step, below);
 the refusal message spells out exactly how.
 
 | Mode | What it touches | Use when |
@@ -81,13 +81,13 @@ adopted  = "YYYY-MM-DD"
 
 ### Preview
 
-- `host-lifecycle classify <dir>` → the case (or a refusal if the target is a
-  software repo — stop and follow its steps; do not adopt software in place).
-- `host-lint --all` → naming tells in **live tracked files** (you will fix these).
-- `host-lint --prose` → **prose tropes** in authored docs (the LLM-slop markers it
+- `host-lifecycle classify <dir>` reports the case (or a refusal if the target is a
+  software repo; stop and follow its steps, and do not adopt software in place).
+- `host-lint --all` reports naming tells in **live tracked files** (you will fix these).
+- `host-lint --prose` reports **prose tropes** in authored docs (the LLM-slop markers it
   flags). You will clean these to zero, the way you clear naming tells.
-- `host-lint --log` → tells in **history** (informational; do not rewrite unless Deep).
-- Write down the **rename map** (each ordinal-named file → its content-named home
+- `host-lint --log` reports tells in **history** (informational; do not rewrite unless Deep).
+- Write down the **rename map** (each ordinal-named file mapped to its content-named home
   under `plan/`) and, for case (b), the **merge plan**. Apply nothing yet.
 
 ### Establish governance (by case)
@@ -114,14 +114,14 @@ already a gitlink submodule, convert it in place (preserve the pin, de-register
 the gitlink, write `.host-software`, gitignore the trees), creating, moving, or
 rewriting no software commit.
 
-Every worktree **must** surface *under* the host root — never a bare external
+Every worktree **must** surface *under* the host root, never a bare external
 path. When a backing store has to live elsewhere (another filesystem or platform,
 e.g. a native-Windows build that cannot sit on a WSL share), record it on the
 parallel line as `worktree = <dir> <branch> <pin> store=<path> [host=<os>]`:
 `--materialize` realises the store at `<path>` and the in-tree `<dir>` as a
 symlink/junction to it, so an edit through `<dir>/…` still lands in the tree under
-test. `host=<os>` (optional) is the OS that *materializes* the store — where you run
-`host-lifecycle` — not the build platform; a Windows Dev Drive reached from WSL is
+test. `host=<os>` (optional) is the OS that *materializes* the store (where you run
+`host-lifecycle`), not the build platform; a Windows Dev Drive reached from WSL is
 `host=linux`. `software --check` HAZARDs any worktree path that escapes the root.
 
 ### Wire the tools
@@ -130,7 +130,7 @@ Add the four verification tools as submodules (reference, do not vendor: each is
 pinned to a commit), then **generate** their skill symlinks with `link-skills.sh`
 after materialization (do not git-track a symlink into a path that a fresh clone
 has not materialized). allium, specula and host-lifecycle each ship Claude skills
-under `skills/`, so an agent drives them through those skills — not from memory:
+under `skills/`, so an agent drives them through those skills rather than from memory:
 
 ```
 tools/host-lint        github.com/connollydavid/host-lint        (Rust)
@@ -152,12 +152,12 @@ set this methodology is verified against. Install each:
   git hooks with `host-lifecycle software --install-hooks .` (copies `pre-commit`,
   `commit-msg`, and the built binary) so new commits are gated from here on.
 - **host-lifecycle skills**: `tools/host-lifecycle` also ships one skill per
-  lifecycle phase — `classify`, `adopt`, `embed`, `remap`, `verify`, `publish`,
-  `upgrade` — wired by the same `link-skills.sh`. Drive each phase through its
+  lifecycle phase (`classify`, `adopt`, `embed`, `remap`, `verify`, `publish`,
+  `upgrade`), wired by the same `link-skills.sh`. Drive each phase through its
   skill and command; the phases are **unconditional** (no opt-out).
 - **allium** (requirements lane, behavioural specs / property-based): its skills
   (`elicit`/`distill`/`tend`/`weed`/`propagate`) come from the `tools/allium`
-  submodule via `link-skills.sh` — author and maintain `.allium` through them, not
+  submodule via `link-skills.sh`; author and maintain `.allium` through them, not
   by hand (Claude Code users may instead `/plugin install allium`). The `.allium`
   specs are checked by the `allium` CLI: `cargo install allium-cli@3.4.2`, or
   `brew tap juxt/allium && brew install allium`.
@@ -168,9 +168,9 @@ set this methodology is verified against. Install each:
   <spec>.cfg <spec>.tla`. CI runs exactly these versions (`actions/setup-java`
   Temurin `21` plus the pinned `v1.8.0` jar); see the Specula workflow.
 - **host-prove** (deeper rungs, **opt-in**): above the bounded lanes, `tools/host-prove`
-  drives three heavier verifiers as skills — **Apalache** (symbolic/parametric TLA+ via
-  SMT), **TLAPS** (`tlapm`, unbounded proof; authoring needs a strong model), and a
-  target-specific **code-conformance** verifier (Rust → **Kani**). Each skill turns the
+  drives three heavier verifiers as skills. **Apalache** does symbolic/parametric TLA+ via
+  SMT, **TLAPS** (`tlapm`) does unbounded proof (authoring needs a strong model), and a
+  target-specific **code-conformance** verifier covers Rust via **Kani**. Each skill turns the
   tool's output into one machine-readable verdict, so a rung runs down to a small model.
   Wire the submodule and `link-skills.sh` only when you declare a rung by dispositioning
   an obligation `kani:`/`apalache:`/`tlaps:`. Verifiers install from official prebuilt
@@ -183,7 +183,7 @@ by `host-lifecycle obligations <spec> --tests <dir>`), and `software --check`
 HAZARDs a `.allium` with no manifest; a `.tla` MUST have a TLC lane. A declared
 deeper rung is the same rule one level up: an obligation dispositioned
 `kani:`/`apalache:`/`tlaps:` MUST have its CI lane (`cargo kani` / `apalache-mc` /
-`tlapm`) or `software --check` HAZARDs it — but only once declared; the rungs are
+`tlapm`) or `software --check` HAZARDs it, but only once declared; the rungs are
 opt-in and inert otherwise. The lifecycle phases above are unconditional. The full
 rules live in the template's `CLAUDE.md`.
 
@@ -203,7 +203,7 @@ for genuine vocabulary, or an excluded path). Commit (the clean tree is the
 verbatim archive), then run `host-lifecycle remap --apply <dir>`, which makes only
 the declared substitutions, map-only by construction. Commit, then `git rm .host-remap` (its
 durable copy goes in the `call/` decision). Shallow: one PR. Staged: split
-governance → tooling → bulk rename. Deep (human): archive-first, then rewrite
+governance, then tooling, then the bulk rename. Deep (human): archive-first, then rewrite
 history too.
 
 **Prose layer: clean the slop.** `host-lint --prose` flags the LLM-slop prose tropes
@@ -224,14 +224,14 @@ entry, so the migration is auditable from a fresh session.
 
 ### Verify
 
-- `host-lifecycle validate plan/` and `host-lifecycle validate call/` → `ok`.
-- `host-lifecycle software --check` → each worktree at its pin, no `HAZARD` (this
+- `host-lifecycle validate plan/` and `host-lifecycle validate call/` report `ok`.
+- `host-lifecycle software --check` shows each worktree at its pin, no `HAZARD` (this
   also enforces the spec lanes and the `.obligations` manifest).
-- For each `.allium`, `host-lifecycle obligations <spec> --tests <dir>` → every
+- For each `.allium`, `host-lifecycle obligations <spec> --tests <dir>` shows every
   obligation dispositioned.
-- `host-lint --all` → clean on live files (the record excluded via `.host-lintignore`).
-- `host-lint --prose` → **zero prose tropes** in authored docs (the agent's `MEMORY.md` excepted).
-- A throwaway commit with a tell in its message → the hook blocks it.
+- `host-lint --all` is clean on live files (the record excluded via `.host-lintignore`).
+- `host-lint --prose` shows **zero prose tropes** in authored docs (the agent's `MEMORY.md` excepted).
+- A throwaway commit with a tell in its message is blocked by the hook.
 - If the repo ships an mdBook site, it builds.
 
 ## Upgrading
@@ -247,10 +247,10 @@ order. The template's `UPGRADING.md` is the ledger of actions, one `[upgrade
 2. `host-lifecycle upgrade <dir>` lists every ledger entry **not yet applied**, by
    ledger position (never git ancestry). A legacy single-`revision` stamp is migrated
    once to a `baseline`. `upgrade --next` prints the single next safe action.
-3. Apply an entry, then record it: `host-lifecycle upgrade --record <id>` (id,
-   unambiguous prefix, or ledger ordinal). The tool validates the id, refuses if a
-   `depends` is unapplied, runs the entry's `verify` — or requires `--unverified
-   call/NNNN` when it has none — and appends an append-only claim. **Never hand-edit
+3. Apply an entry, then record it: `host-lifecycle upgrade --record <id>`, where the
+   id may be an unambiguous prefix or a ledger ordinal. The tool validates the id, refuses if a
+   `depends` is unapplied, then runs the entry's `verify` (or requires `--unverified
+   call/NNNN` when it has none) before appending an append-only claim. **Never hand-edit
    the stamp.** A late `independent` entry may be cherry-applied without an earlier
    unrelated one; deferred entries stay pending and re-list (fail-safe), and
    `upgrade --advance` later compacts a contiguous applied run into the `baseline`.

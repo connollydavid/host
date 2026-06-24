@@ -1,0 +1,21 @@
+name: Prose
+
+# The front-door obeys the prose rule the methodology publishes (plan/0038): authored
+# markdown carries zero prose tropes. `host-lifecycle prose .` is host-lint's `--docs`
+# engine run in-process; it exits non-zero on any flag or warning.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  prose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to the same host-lifecycle the host gates on (v0.24.2).
+      - name: Install host-lifecycle (pinned)
+        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 9a1a5869c62a2dc549f4ac7ef5b1d6294f25d06c --root "$HOME/.local"
+      - name: Prose gate (zero tropes in authored docs)
+        run: "$HOME/.local/bin/host-lifecycle prose ."
