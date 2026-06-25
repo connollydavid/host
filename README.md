@@ -153,8 +153,9 @@ set this methodology is verified against. Install each:
   `commit-msg`, and the built binary) so new commits are gated from here on.
 - **host-lifecycle skills**: `tools/host-lifecycle` also ships one skill per
   lifecycle phase (`classify`, `adopt`, `embed`, `remap`, `verify`, `publish`,
-  `upgrade`), wired by the same `link-skills.sh`. Drive each phase through its
-  skill and command; the phases are **unconditional** (no opt-out).
+  `upgrade`, `release`), wired by the same `link-skills.sh`. Drive each phase
+  through its skill and command; the lifecycle is **unconditional** (no opt-out),
+  though a phase may be conditional on a Where room (`embed`, `release`).
 - **allium** (requirements lane, behavioural specs / property-based): its skills
   (`elicit`/`distill`/`tend`/`weed`/`propagate`) come from the `tools/allium`
   submodule via `link-skills.sh`; author and maintain `.allium` through them, not
