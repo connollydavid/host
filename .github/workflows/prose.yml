@@ -14,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Pinned to the same host-lifecycle the host gates on (v0.24.2).
+      # Pinned to the same host-lifecycle the host gates on (v0.30.1), which embeds the
+      # host-lint engine that honors the per-repo LEXICON in the prose lane (host-lifecycle#2).
       - name: Install host-lifecycle (pinned)
-        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 9a1a5869c62a2dc549f4ac7ef5b1d6294f25d06c --root "$HOME/.local"
+        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 46d481cd755302fcd5eaa47ddbbda814b3016567 --root "$HOME/.local"
       - name: Prose gate (zero tropes in authored docs)
         run: "$HOME/.local/bin/host-lifecycle prose ."
