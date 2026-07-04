@@ -106,8 +106,9 @@ adopted  = "YYYY-MM-DD"
 
 `host-lifecycle adopt <dir> <revision>` creates `cast/ plan/ call/` idempotently
 and writes the stamp. Then embed the software in the *Where* slot as a **bare store
-with worktrees**: `<name>.git/` plus the canonical worktree `<name>/` and any
-parallel worktrees. Commit a `.host-software` recipe with one `[software "<name>"]`
+with worktrees** under `software/<name>/`: the object store is `.bare/`, with a
+`.git` gitdir-link file (`gitdir: ./.bare`) beside it, plus the canonical worktree
+at `<branch>/` and any parallel worktrees. Commit a `.host-software` recipe with one `[software "<name>"]`
 stanza per component (URL, pinned SHA, worktree set); gitignore the trees;
 materialize with `host-lifecycle software --materialize`. If the software is
 already a gitlink submodule, convert it in place (preserve the pin, de-register
