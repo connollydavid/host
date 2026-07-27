@@ -238,7 +238,15 @@ entry, so the migration is auditable from a fresh session.
   also enforces the spec lanes and the `.obligations` manifest).
 - For each `.allium`, `host-lifecycle obligations <spec> --tests <dir>` shows every
   obligation dispositioned.
-- `host-lint --all` is clean on live files (the record excluded via `.host-lintignore`).
+- `host-lint --all` reports **no flag** on live files (the record excluded via
+  `.host-lintignore`). Warnings are advisory and are read one by one, exactly as the
+  commit-msg hook treats exit 3: the recall-biased rules also fire on genuine version
+  strings and identifiers, so confirm each flagged token is a real version or identifier
+  rather than a bare-numeral tell, then proceed. A legitimate version is no reason to
+  reword a document. Declare a phrase in the `LEXICON` only when it is genuine project
+  vocabulary you expect to keep writing; a warning you have read and judged needs no
+  file. Do not treat a nonzero exit here as a defect to clear: `--all` exits 3 on any
+  warning, and a project of any size carries some.
 - `host-lint --prose` shows **zero prose tropes** in authored docs (the agent's `MEMORY.md` excepted).
 - A throwaway commit with a tell in its message is blocked by the hook.
 - If the repo ships an mdBook site, it builds.
