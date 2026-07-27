@@ -75,7 +75,14 @@ adopted  = "YYYY-MM-DD"
 ```
 
 `host-lifecycle adopt` writes it; `host-lifecycle version` reads it. The
-`revision` is what a later case-(c) upgrade diffs from, so it must be exact.
+`revision` must be exact, because it is what the first upgrade resolves against.
+
+That first upgrade migrates it, once, to the shape [Upgrading](#upgrading)
+describes: a `baseline` ledger entry plus an optional `applied` set. From then on
+the stamp records **what has been applied** rather than what was adopted, and
+`revision` is a legacy field the tool reads only when no `baseline` is present. A
+host past that migration carries no `revision`, and `host-lifecycle version` prints
+the baseline and the applied set instead.
 
 ## The procedure
 
