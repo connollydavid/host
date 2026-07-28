@@ -1,0 +1,485 @@
+-- allium: 3
+-- host install: the one-liner that puts the toolset on a machine and scaffolds a
+-- project from it (plan/0071, completing plan/0065's install mode).
+--
+-- `curl -fsSL .../install.sh | bash` does two things that fail in different ways,
+-- and plan/0065 line 170 settled that it must not fold them into one atomic step.
+-- The install phase puts a verified toolset on PATH. The create phase scaffolds a
+-- project and hands it to an agent harness. The seam between them is the subject
+-- of this specification: what has to be true before a project is scaffolded, and
+-- what an operator is told when it is not.
+--
+-- Scope: the install set and its all-or-nothing rule, what a binary must satisfy
+-- before it lands on PATH, the receipt that records what landed, the name
+-- backstop, and the outcome each ending carries. Excludes (implementation): the
+-- `uname` mapping, the shell-config file per login shell, the manifest's line
+-- syntax, the menu's prompt text, and the exact URL of any asset.
+--
+-- One thing is deliberately NOT modelled as a trust decision. The manifest is
+-- served from the same repository over the same TLS as the script the operator
+-- already chose to run, so fetching it crosses no boundary they had not crossed.
+-- The durable check is the reproducible build, which re-derives any recorded
+-- hash offline from pinned source and a recorded toolchain.
+
+-- Why a run ended, and what an operator or a wrapper can act on. Modelled
+-- because these are the observable surface of a script met through a pipe: the
+-- message scrolls past, and the ending is what survives.
+enum Outcome {
+    pending
+    installed_and_launched
+    installed_no_harness
+    missing_prerequisite
+    unsupported_platform
+    fetch_failed
+    manifest_untrusted
+    digest_mismatch
+    name_required
+    name_refused
+    target_exists
+}
+
+entity Project {
+    name: String
+}
+
+-- The machine, as far as the script could establish it. `supported` is separate
+-- from `detected` on purpose: a machine the script identified and does not serve
+-- is a different answer from one it could not identify, and an operator can act
+-- on the first.
+entity Machine {
+    detected: Boolean
+    supported: Boolean
+    -- Every prerequisite the script needs before it does any work: git, a SHA256
+    -- verifier, a downloader. Checked before the first fetch rather than at the
+    -- step that needs them, so a machine missing one is told immediately.
+    prerequisites_met: Boolean
+}
+
+-- The install manifest, keyed to the template revision it was generated against,
+-- because `host` install is also the upgrade route.
+entity Manifest {
+    fetched: Boolean
+    -- Served over the same TLS as the script itself. False models a transport
+    -- that failed or was refused, never a signature check.
+    transport_trusted: Boolean
+}
+
+-- One binary, for one platform, as the manifest records it. The digest is the
+-- identity the download is checked against.
+entity ManifestEntry {
+    -- Whether this entry is the one for the detected machine. The manifest carries
+    -- every platform; a run consumes only its own.
+    for_this_machine: Boolean
+}
+
+-- Whether every entry the manifest carries for this machine was downloaded and
+-- placed. Its own fact rather than an inference from the absence of failure: a
+-- run that downloaded nothing at all also saw no mismatch, so without this the
+-- install would complete over an empty set. That is the shape of defect this
+-- project has closed twice in its document walks, and it is worth more here,
+-- where the empty set means an operator has no toolset and is told they do.
+entity InstallSet {
+    every_entry_placed: Boolean
+}
+
+-- One attempt to fetch one entry's bytes and check them. `digest_matched` is the
+-- whole point: the bytes are identified before anything is done with them.
+entity Download {
+    entry: ManifestEntry
+    succeeded: Boolean
+    digest_matched: Boolean
+}
+
+-- A binary placed where the operator's shell will find it. Its own entity rather
+-- than a flag on the download, because the question the invariants have to answer
+-- is what reached PATH, and an entity that exists only when something did is what
+-- makes that answerable.
+entity Placement {
+    download: Download
+}
+
+-- The project name, and the ways it can fail to be usable. `reserved` names
+-- `agentic-host`, this project's own development host, which an adopter must not
+-- create in place.
+entity Name {
+    -- Given as an argument, or read from a controlling terminal. False with no
+    -- TTY is the backstop plan/0065 lines 99-107 locked: there is nothing to
+    -- prompt, and a default would be invented.
+    supplied: Boolean
+    well_formed: Boolean
+    reserved: Boolean
+}
+
+-- The directory the scaffold would create, and the name that decided it.
+entity Target {
+    name: Name
+    exists: Boolean
+}
+
+-- A scaffolded project. Created only by the create phase, so every invariant
+-- about what must precede a scaffold can bite on its existence.
+entity ScaffoldedProject {
+    name: Name
+}
+
+-- An agent harness found on the machine, from the allowlist. Probed by name
+-- rather than by any environment variable, because no cross-vendor standard for
+-- announcing a harness exists.
+entity Harness {
+    available: Boolean
+}
+
+-- One `install.sh` run.
+entity InstallRun {
+    status: installing | installed | creating | done | failed
+    -- The machine facts, latched onto the run. They live here rather than being
+    -- read across from Machine because a guard that reaches into another entity
+    -- cannot be ordered against its sibling: the analyser cannot tell that two
+    -- rules firing on the same event exclude each other, and it is right that it
+    -- cannot. Latching is what makes the branch provably exhaustive.
+    prerequisites_met: Boolean
+    platform_supported: Boolean
+    -- Latched when every entry for this machine downloaded and matched its digest.
+    -- This is the seam: the create phase reads this and nothing else.
+    install_complete: Boolean
+    -- Latched when any download failed its digest check. All-or-nothing turns on
+    -- this: one mismatch anywhere stops the whole install, including the entries
+    -- that did match.
+    saw_digest_mismatch: Boolean
+    -- The machine-side record of what landed, written on the way out of the
+    -- install phase whatever happened, so a partial install leaves a record
+    -- naming what is absent rather than silence.
+    receipt_written: Boolean
+    -- The name resolved, and whether it is usable. Two facts, because "no name
+    -- was given" and "the name given is refused" are different answers with
+    -- different remedies.
+    name_supplied: Boolean
+    name_usable: Boolean
+    -- The target directory does not already exist.
+    target_free: Boolean
+    -- A harness was found, so the run can hand the project over. False is an
+    -- ordinary success: the project is scaffolded and ready either way.
+    launched: Boolean
+    outcome: Outcome
+    transitions status {
+        installing -> installed
+        installing -> failed
+        installed -> creating
+        installed -> failed
+        creating -> done
+        creating -> failed
+        terminal: done, failed
+    }
+}
+
+given {
+    machine: Machine
+    manifest: Manifest
+    install_set: InstallSet
+    run: InstallRun
+}
+
+-- The operator's entry point. One surface, because the pipe is the only way in.
+surface InstallScript {
+    facing project: Project
+    provides:
+        RunStarts(project)
+        InstallCompletes(project)
+        NameResolved(project)
+        CreateCompletes(project)
+    @guarantee NothingLandsUnverified
+        -- No binary reaches PATH whose bytes were not checked against the digest
+        -- the manifest records for it.
+    @guarantee NoProjectWithoutToolset
+        -- No project is scaffolded against a partial toolset, because a bootstrap
+        -- never runs against a partial toolchain.
+}
+
+-- === The install phase ===
+
+-- Every latch starts false, so a fact the run never established cannot be read
+-- later as established.
+rule StartRun {
+    when: RunStarts(project)
+    ensures: run.status = installing
+    ensures: run.prerequisites_met = false
+    ensures: run.platform_supported = false
+    ensures: run.install_complete = false
+    ensures: run.saw_digest_mismatch = false
+    ensures: run.receipt_written = false
+    ensures: run.name_supplied = false
+    ensures: run.name_usable = false
+    ensures: run.target_free = false
+    ensures: run.launched = false
+    ensures: run.outcome = pending
+}
+
+rule RecordPrerequisites {
+    when: machine: Machine.created
+    requires: run.status = installing and machine.prerequisites_met
+    ensures: run.prerequisites_met = true
+}
+
+rule RecordPlatform {
+    when: machine: Machine.created
+    requires: run.status = installing and machine.detected and machine.supported
+    ensures: run.platform_supported = true
+}
+
+-- A download whose bytes match the recorded digest, and which is the entry for
+-- this machine, is placed. The only rule that creates a Placement, which is what
+-- makes the unverified-bytes invariant provable rather than merely asserted.
+rule PlaceVerifiedBinary {
+    when: download: Download.created
+    requires: run.status = installing and download.succeeded
+              and download.digest_matched and download.entry.for_this_machine
+    ensures: Placement.created(download: download)
+}
+
+-- One mismatch latches, and the latch is what all-or-nothing reads. A digest that
+-- does not match is not a slow network: the bytes are not the bytes the manifest
+-- names, and the run stops for the whole set rather than for that entry.
+rule RecordDigestMismatch {
+    when: download: Download.created
+    requires: run.status = installing and download.succeeded
+              and not download.digest_matched
+    ensures: run.saw_digest_mismatch = true
+}
+
+-- The install phase ends in exactly one of these. The guards form a ladder, each
+-- one carrying its predecessors negated, so no two can fire on the same run and
+-- no run can fall through the bottom.
+
+rule FailMissingPrerequisite {
+    when: InstallCompletes(project)
+    requires: run.status = installing and not run.prerequisites_met
+    ensures: run.status = failed
+    ensures: run.outcome = missing_prerequisite
+    ensures: run.receipt_written = true
+}
+
+rule FailUnsupportedPlatform {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and not run.platform_supported
+    ensures: run.status = failed
+    ensures: run.outcome = unsupported_platform
+    ensures: run.receipt_written = true
+}
+
+rule FailManifestUnreachable {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and run.platform_supported and not manifest.fetched
+    ensures: run.status = failed
+    ensures: run.outcome = fetch_failed
+    ensures: run.receipt_written = true
+}
+
+rule FailManifestUntrusted {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and run.platform_supported and manifest.fetched
+              and not manifest.transport_trusted
+    ensures: run.status = failed
+    ensures: run.outcome = manifest_untrusted
+    ensures: run.receipt_written = true
+}
+
+rule FailDigestMismatch {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and run.platform_supported and manifest.fetched
+              and manifest.transport_trusted and run.saw_digest_mismatch
+    ensures: run.status = failed
+    ensures: run.outcome = digest_mismatch
+    ensures: run.receipt_written = true
+}
+
+-- Every entry was expected and not every entry arrived, with no mismatch to
+-- explain it: a fetch died. Named rather than folded into the clean branch,
+-- because the difference between "these bytes are wrong" and "these bytes never
+-- came" is the difference between a compromise and a bad network.
+rule FailIncompleteSet {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and run.platform_supported and manifest.fetched
+              and manifest.transport_trusted and not run.saw_digest_mismatch
+              and not install_set.every_entry_placed
+    ensures: run.status = failed
+    ensures: run.outcome = fetch_failed
+    ensures: run.receipt_written = true
+}
+
+rule CompleteInstall {
+    when: InstallCompletes(project)
+    requires: run.status = installing and run.prerequisites_met
+              and run.platform_supported and manifest.fetched
+              and manifest.transport_trusted and not run.saw_digest_mismatch
+              and install_set.every_entry_placed
+    ensures: run.status = installed
+    ensures: run.install_complete = true
+    ensures: run.receipt_written = true
+}
+
+-- === The create phase ===
+
+rule RecordNameSupplied {
+    when: name: Name.created
+    requires: run.status = installed and name.supplied
+    ensures: run.name_supplied = true
+}
+
+rule RecordNameUsable {
+    when: name: Name.created
+    requires: run.status = installed and name.supplied and name.well_formed
+              and not name.reserved
+    ensures: run.name_usable = true
+}
+
+-- No name, and nowhere to ask for one. Exits with a machine-parseable line naming
+-- the missing field rather than inventing a default.
+rule RefuseWithoutName {
+    when: NameResolved(project)
+    requires: run.status = installed and not run.name_supplied
+    ensures: run.status = failed
+    ensures: run.outcome = name_required
+}
+
+-- A malformed name, or the reserved one. `agentic-host` is this project's own
+-- development host: adopting a software repository in place is the mistake the
+-- entrance refuses by name, and creating a second thing carrying its name is the
+-- same mistake wearing the other hat.
+rule RefuseName {
+    when: NameResolved(project)
+    requires: run.status = installed and run.name_supplied and not run.name_usable
+    ensures: run.status = failed
+    ensures: run.outcome = name_refused
+}
+
+rule BeginCreate {
+    when: NameResolved(project)
+    requires: run.status = installed and run.name_supplied and run.name_usable
+    ensures: run.status = creating
+}
+
+rule RecordTargetFree {
+    when: target: Target.created
+    requires: run.status = creating and not target.exists
+    ensures: run.target_free = true
+}
+
+-- The scaffold happens where the target is established, and only above a complete
+-- install and a written receipt. Creating an entity rather than moving the run,
+-- so the guard that protects it is separate from the guard that ends the phase.
+rule ScaffoldProject {
+    when: target: Target.created
+    requires: run.status = creating and not target.exists
+              and run.install_complete and run.receipt_written
+    ensures: ScaffoldedProject.created(name: target.name)
+}
+
+rule NoteHarness {
+    when: harness: Harness.created
+    requires: run.status = creating and harness.available
+    ensures: run.launched = true
+}
+
+rule RefuseExistingTarget {
+    when: CreateCompletes(project)
+    requires: run.status = creating and not run.target_free
+    ensures: run.status = failed
+    ensures: run.outcome = target_exists
+}
+
+rule LaunchHarness {
+    when: CreateCompletes(project)
+    requires: run.status = creating and run.target_free and run.launched
+    ensures: run.status = done
+    ensures: run.outcome = installed_and_launched
+}
+
+-- No harness on the machine. The project is scaffolded and ready, and this is a
+-- success: the operator is told which harness to install and where to go.
+rule CompleteWithoutHarness {
+    when: CreateCompletes(project)
+    requires: run.status = creating and run.target_free and not run.launched
+    ensures: run.status = done
+    ensures: run.outcome = installed_no_harness
+}
+
+-- === Invariants ===
+
+-- Nothing reaches PATH whose bytes were not identified first. The Placement
+-- entity exists only where a digest matched, so this is provable rather than
+-- asserted, and it is the property the whole trust argument rests on.
+invariant NothingLandsUnverified {
+    for p in Placements:
+        p.download.digest_matched and p.download.succeeded
+}
+
+-- A completed install placed every entry for this machine. Without this, "no
+-- mismatch was seen" would be enough, and a run that fetched nothing would report
+-- a toolset the operator does not have.
+invariant CompleteInstallPlacedEveryEntry {
+    for r in InstallRuns where r.install_complete:
+        install_set.every_entry_placed
+}
+
+-- A run installs its own platform's binaries and nothing else. The manifest
+-- carries every platform, so without this a machine could be handed bytes built
+-- for another one, whose digest would match perfectly.
+invariant PlacementIsForThisMachine {
+    for p in Placements:
+        p.download.entry.for_this_machine
+}
+
+-- All-or-nothing, stated where it bites. A run that saw any mismatch reaches no
+-- terminal state except failure, so the entries that did match are not left
+-- installed beside the one that did not.
+invariant MismatchInstallsNothing {
+    for r in InstallRuns where r.saw_digest_mismatch:
+        r.status in {installing, failed}
+}
+
+-- No project is scaffolded against a partial toolset. This is the seam between
+-- the two failure domains.
+invariant NoProjectWithoutToolset {
+    for s in ScaffoldedProjects:
+        run.install_complete
+}
+
+-- The record precedes the project. A scaffolded project whose toolset was never
+-- recorded is the untraceable state the receipt exists to prevent.
+invariant ReceiptPrecedesProject {
+    for s in ScaffoldedProjects:
+        run.receipt_written
+}
+
+-- A name reaches the scaffold well formed, or it does not reach it. Path
+-- traversal, shell metacharacters and the empty string are refused before
+-- anything is created.
+invariant ScaffoldNameIsWellFormed {
+    for s in ScaffoldedProjects:
+        s.name.well_formed
+}
+
+-- The reserved name is never created, whichever way it arrived.
+invariant ReservedNameIsNeverScaffolded {
+    for s in ScaffoldedProjects:
+        not s.name.reserved
+}
+
+-- A successful run installed the set. Both success outcomes, because the absence
+-- of a harness is not a failure of the install.
+invariant SuccessImpliesInstalled {
+    for r in InstallRuns where r.outcome in {installed_and_launched, installed_no_harness}:
+        r.install_complete
+}
+
+-- Every run that reached the create phase left a record of what landed, so a
+-- machine never carries a project whose toolset is untraceable.
+invariant DoneRunLeftARecord {
+    for r in InstallRuns where r.status = done:
+        r.receipt_written
+}
