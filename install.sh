@@ -19,6 +19,9 @@
 set -euo pipefail
 
 MANIFEST_URL=${HOST_MANIFEST_URL:-https://raw.githubusercontent.com/connollydavid/host/main/install-manifest}
+# Quoted back to the operator when a name is missing, so the remedy they are shown is
+# a command they can run rather than the tail of one.
+INSTALL_URL=${HOST_INSTALL_URL:-https://raw.githubusercontent.com/connollydavid/host/main/install.sh}
 BIN_DIR=${HOST_BIN_DIR:-$HOME/.local/bin}
 RECEIPT_DIR=${XDG_DATA_HOME:-$HOME/.local/share}/host
 RECEIPT=$RECEIPT_DIR/install-receipt
@@ -248,7 +251,8 @@ resolve_name() {
     # No name and nothing to ask on. A machine-parseable line naming the missing
     # field, rather than a default nobody chose.
     [ -n "$candidate" ] \
-        || die $EX_NAME "name required: pass one as an argument, for example | bash -s -- acme"
+        || die $EX_NAME "name required: pass one as an argument. Complete command:
+  curl -fsSL $INSTALL_URL | bash -s -- acme"
 
     case $candidate in
         agentic-*) ;;
@@ -302,7 +306,10 @@ detect_harness() {
     if [ "$count" -eq 0 ]; then
         say ""
         say "No agent harness found. $NAME is scaffolded and ready."
-        say "Install one (opencode or claude, for example), then: cd $NAME"
+        say "Install an agent harness, then run it inside the project:"
+        say "  opencode     https://opencode.ai"
+        say "  Claude Code  https://claude.com/claude-code"
+        say "  cd $NAME"
         exit 0
     fi
 
@@ -315,7 +322,7 @@ detect_harness() {
         # Several available and no way to ask. Taking the first would be a silent
         # choice among things the operator may care about, so it is not made.
         say ""
-        say "$NAME is scaffolded and ready. Several harnesses are installed:$found"
+        say "$NAME is scaffolded and ready. Several harnesses are installed: $found"
         say "Start one yourself: cd $NAME"
         exit 0
     fi
