@@ -1,0 +1,109 @@
+# host-install.obligations — a disposition for every `allium plan` obligation.
+# `host-lifecycle obligations host-install.allium --tests tests --strict-discharge`
+# checks this is complete: no obligation undispositioned, no stale entry, every
+# `test:` naming a real definition, every `exercises=` token present in its body.
+#
+#   <id> => test:<name> [exercises=<token>] | structural | waived: <reason>
+#
+# structural = the spec's own check/analyse lane discharges it (field presence,
+# enum comparability, surface shape, the declared transition graph).
+#
+# The tests are shell functions in tests/install-test.sh, because the artifact is a
+# shell script. host-lifecycle recognised only Rust `fn` definitions until v0.48.0,
+# which would have forced every behavioural obligation here into `waived:` — waiving
+# tests that exist and run, which is the relabel dodge in other clothes.
+#
+# Each entry names the test that RUNS the rule. The rule of thumb is the refs
+# manifest's: if breaking the rule would not fail the named test, the disposition is
+# wrong. Checked against three mutations of install.sh (the digest comparison, the
+# all-or-nothing count, the reserved name), each of which reddened the named tests.
+# The `exercises=` token is a string the test body actually contains, verified
+# mechanically rather than chosen by eye.
+
+# --- Spec-integrity (the check/analyse lane discharges these) ---
+enum-comparable.Outcome                                    => structural
+entity-fields.Project                                      => structural
+entity-fields.Machine                                      => structural
+entity-fields.Manifest                                     => structural
+entity-fields.ManifestEntry                                => structural
+entity-fields.InstallSet                                   => structural
+entity-fields.Download                                     => structural
+entity-fields.Placement                                    => structural
+entity-fields.Name                                         => structural
+entity-fields.Target                                       => structural
+entity-fields.ScaffoldedProject                            => structural
+entity-fields.Harness                                      => structural
+entity-fields.InstallRun                                   => structural
+surface-actor.InstallScript                                => structural
+surface-provides.InstallScript                             => structural
+transition-terminal.InstallRun.status                      => structural
+transition-rejected.InstallRun.status                      => structural
+
+# --- Declared transitions, each driven end to end ---
+transition-edge.InstallRun.installing.installed            => test:clean_run_installs_and_scaffolds exercises=install-receipt
+transition-edge.InstallRun.installing.failed               => test:digest_mismatch_installs_nothing exercises=recorded digest
+transition-edge.InstallRun.installed.creating              => test:clean_run_installs_and_scaffolds exercises=install-receipt
+transition-edge.InstallRun.installed.failed                => test:name_required_without_a_tty exercises=name required
+transition-edge.InstallRun.creating.done                   => test:clean_run_installs_and_scaffolds exercises=install-receipt
+transition-edge.InstallRun.creating.failed                 => test:existing_target_refused exercises=already exists
+
+# --- Rules ---
+rule-success.StartRun                                      => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-success.RecordPrerequisites                           => test:prerequisites_absent_refuses exercises=needs git
+rule-success.RecordPlatform                                => test:unknown_os_refuses exercises=MOCK_UNAME_S
+rule-success.PlaceVerifiedBinary                           => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-success.RecordDigestMismatch                          => test:digest_mismatch_installs_nothing exercises=recorded digest
+rule-success.FailMissingPrerequisite                       => test:prerequisites_absent_refuses exercises=needs git
+rule-success.FailUnsupportedPlatform                       => test:unknown_arch_refuses exercises=MOCK_UNAME_M
+rule-success.FailManifestUnreachable                       => test:manifest_unreachable_refuses exercises=MOCK_CURL_FAIL
+rule-success.FailManifestUntrusted                         => waived: curl enforces the transport itself with --proto '=https' --tlsv1.2, so no run reaches this rule with an untrusted transport; a test would have to mock curl into lying about TLS, and would then be testing the mock
+rule-success.FailDigestMismatch                            => test:digest_mismatch_installs_nothing exercises=recorded digest
+rule-success.FailIncompleteSet                             => test:manifest_without_this_platform_refuses exercises=no binaries for
+rule-success.CompleteInstall                               => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-success.RecordNameSupplied                            => test:name_required_without_a_tty exercises=name required
+rule-success.RecordNameUsable                              => test:reserved_name_refused exercises=agentic-host
+rule-success.RefuseWithoutName                             => test:name_required_without_a_tty exercises=name required
+rule-success.RefuseName                                    => test:malformed_name_refused exercises=run_install
+rule-success.BeginCreate                                   => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-success.RecordTargetFree                              => test:existing_target_refused exercises=already exists
+rule-success.ScaffoldProject                               => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-success.NoteHarness                                   => test:single_harness_is_launched exercises=opencode
+rule-success.RefuseExistingTarget                          => test:existing_target_refused exercises=already exists
+rule-success.LaunchHarness                                 => test:single_harness_is_launched exercises=opencode
+rule-success.CompleteWithoutHarness                        => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-failure.RecordPrerequisites.1                         => test:prerequisites_absent_refuses exercises=needs git
+rule-failure.RecordPlatform.1                              => test:unknown_os_refuses exercises=MOCK_UNAME_S
+rule-failure.PlaceVerifiedBinary.1                         => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-failure.RecordDigestMismatch.1                        => test:digest_mismatch_installs_nothing exercises=recorded digest
+rule-failure.FailMissingPrerequisite.1                     => test:prerequisites_absent_refuses exercises=needs git
+rule-failure.FailUnsupportedPlatform.1                     => test:unknown_arch_refuses exercises=MOCK_UNAME_M
+rule-failure.FailManifestUnreachable.1                     => test:manifest_unreachable_refuses exercises=MOCK_CURL_FAIL
+rule-failure.FailManifestUntrusted.1                       => waived: curl enforces the transport itself with --proto '=https' --tlsv1.2, so no run reaches this rule with an untrusted transport; a test would have to mock curl into lying about TLS, and would then be testing the mock
+rule-failure.FailDigestMismatch.1                          => test:digest_mismatch_installs_nothing exercises=recorded digest
+rule-failure.FailIncompleteSet.1                           => test:manifest_without_this_platform_refuses exercises=no binaries for
+rule-failure.CompleteInstall.1                             => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-failure.RecordNameSupplied.1                          => test:name_required_without_a_tty exercises=name required
+rule-failure.RecordNameUsable.1                            => test:reserved_name_refused exercises=agentic-host
+rule-failure.RefuseWithoutName.1                           => test:name_required_without_a_tty exercises=name required
+rule-failure.RefuseName.1                                  => test:malformed_name_refused exercises=run_install
+rule-failure.BeginCreate.1                                 => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-failure.RecordTargetFree.1                            => test:existing_target_refused exercises=already exists
+rule-failure.ScaffoldProject.1                             => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-failure.NoteHarness.1                                 => test:single_harness_is_launched exercises=opencode
+rule-failure.RefuseExistingTarget.1                        => test:existing_target_refused exercises=already exists
+rule-failure.LaunchHarness.1                               => test:single_harness_is_launched exercises=opencode
+rule-failure.CompleteWithoutHarness.1                      => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-entity-creation.PlaceVerifiedBinary.1                 => test:clean_run_installs_and_scaffolds exercises=install-receipt
+rule-entity-creation.ScaffoldProject.1                     => test:clean_run_installs_and_scaffolds exercises=install-receipt
+
+# --- Invariants ---
+invariant.NothingLandsUnverified                           => test:digest_mismatch_installs_nothing exercises=recorded digest
+invariant.CompleteInstallPlacedEveryEntry                  => test:manifest_without_this_platform_refuses exercises=no binaries for
+invariant.PlacementIsForThisMachine                        => test:rosetta_is_served_arm64 exercises=sysctl
+invariant.MismatchInstallsNothing                          => test:digest_mismatch_installs_nothing exercises=recorded digest
+invariant.NoProjectWithoutToolset                          => test:download_failure_installs_nothing exercises=MOCK_CURL_FAIL
+invariant.ReceiptPrecedesProject                           => test:clean_run_installs_and_scaffolds exercises=install-receipt
+invariant.ScaffoldNameIsWellFormed                         => test:malformed_name_refused exercises=run_install
+invariant.ReservedNameIsNeverScaffolded                    => test:reserved_name_refused exercises=agentic-host
+invariant.SuccessImpliesInstalled                          => test:clean_run_installs_and_scaffolds exercises=install-receipt
+invariant.DoneRunLeftARecord                               => test:clean_run_installs_and_scaffolds exercises=install-receipt

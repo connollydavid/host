@@ -1,0 +1,60 @@
+name: Install
+
+# The entrance ships an executable now, not only prose, so it gates like a
+# component: the spec is checked and analysed, the script is linted, and the
+# integration suite drives the real script end to end. A spec no workflow reads is
+# an ungated spec, and a script no workflow runs is an untested one.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  allium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install allium-cli (pinned 3.5.0)
+        run: cargo install allium-cli --version 3.5.0
+      - name: allium check
+        run: allium check host-install.allium
+      - name: allium analyse
+        run: allium analyse host-install.allium
+      - name: allium plan (obligation set)
+        run: allium plan host-install.allium
+      # Pinned to v0.47.1, the first release whose discharge checker recognises a
+      # shell test function. An earlier one reports every behavioural obligation
+      # here as missing a test, because the tests are shell rather than Rust.
+      - name: Install host-lifecycle (pinned v0.47.1)
+        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 8c18a3807a021f15f37114b55cf6c3769e6c21a7 --root "$HOME/.local"
+      - name: Discharge obligations (every obligation dispositioned, every test real)
+        run: "$HOME/.local/bin/host-lifecycle obligations host-install.allium --tests tests --strict-discharge"
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y shellcheck
+          shellcheck install.sh make-install-manifest.sh tests/install-test.sh
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Integration suite
+        run: ./tests/install-test.sh
+
+  # The suite also has to run where the script's hardest constraint lives. macOS
+  # ships bash 3.2.57 and has never updated it, so a construct that works on the
+  # Linux runner's bash 5 proves nothing about the machine most adopters use.
+  tests-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Integration suite under the system bash
+        run: /bin/bash ./tests/install-test.sh
+      - name: Confirm that bash really was 3.2
+        run: /bin/bash -c 'echo "$BASH_VERSION"'
