@@ -4,17 +4,17 @@
 #   template-revision <sha>
 #   binary <name> <version> <platform> <url> <sha256>
 
-template-revision c52232b
+template-revision 44b4c84
 
-binary host-lifecycle 0.47.0 darwin-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-darwin-amd64 508f6e9bcc1a3407f6acd64dac038e1284727579cc5c935b36ae677c1be6e825
-binary host-lifecycle 0.47.0 darwin-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-darwin-arm64 7d0c75235e4c13570bd47c98dcddf6308502d2ac335cf256e32c3886aab7886c
-binary host-lifecycle 0.47.0 linux-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-linux-amd64 08a798de764de844bdbdf48c616a443f3bfd4b589ac0afb6f44ee3a027847983
-binary host-lifecycle 0.47.0 linux-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-linux-arm64 1dd8df15e70835fb9150880f48e6fcea7970ca1677bab947bc158750cec2ad2b
-binary host-lifecycle 0.47.0 windows-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-windows-amd64.exe 0bf9c2a1517c23cbb332a8b350d0b865125e15b3de1ff5024d89558e017354c4
-binary host-lifecycle 0.47.0 windows-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.47.0/host-lifecycle-windows-arm64.exe 6bcc6a4bbc63a2f13c8bd069c3c639a1a2f9e6c71a930cb7f90dea4bcefade46
-binary host-lint 0.16.1 darwin-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-darwin-amd64 154ab224bfdd38304ccc8784dfb675ecd85ff0ee77738a58936654d29cf1ba74
-binary host-lint 0.16.1 darwin-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-darwin-arm64 9ba7f8f9535cc6ac006d7aba0b7b3bf7eac71467fe56a22ea0d09e503b854f53
-binary host-lint 0.16.1 linux-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-linux-amd64 ce3e417d79bdf885810043388a8483f66745b85e44519eff9ac2bd7d7e2d48a5
-binary host-lint 0.16.1 linux-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-linux-arm64 34ed4eef75537184f20c9ae4b9669ead87dc8411ccd1a73bb797ee5069f60d8d
-binary host-lint 0.16.1 windows-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-windows-amd64.exe 5aee1c360d27ecdf4d865e20cfb1a7cff30f17af7280bf52545d1c3775242225
-binary host-lint 0.16.1 windows-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.16.1/host-lint-windows-arm64.exe b19ff0a9f80a05604058c6c19d7f990f17cb58150b0b9ac874530c4f06f27172
+binary host-lifecycle 0.50.0 darwin-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-darwin-amd64 7f5f06447e2bde5a868c41270aab0c534ab50217885b7aa0030b5d88f3a620c8
+binary host-lifecycle 0.50.0 darwin-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-darwin-arm64 fc480952e8da0bd429776a99318d6f8c6f8adff332ef5326cff0b8e8915e92e7
+binary host-lifecycle 0.50.0 linux-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-linux-amd64 bd701a3723211f71787714d32b70c2be2e39a0b1c5ff5c4c4ca44b1baf8192e1
+binary host-lifecycle 0.50.0 linux-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-linux-arm64 0ba9077775b2ea600b6f530d27650a15658dc0188ef1f0f84a8b0bf793d3d9ae
+binary host-lifecycle 0.50.0 windows-amd64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-windows-amd64.exe 55e31af5317cbb7de8b5fae8bc09e19e40990a9f03b1cc8df8f8e6934c8f2f4a
+binary host-lifecycle 0.50.0 windows-arm64 https://github.com/connollydavid/host-lifecycle/releases/download/v0.50.0/host-lifecycle-windows-arm64.exe 9dd9d41e8cfda6ebf6a3a3e684d7d619fb024c60d6e57579f71a94c775fda97e
+binary host-lint 0.18.1 darwin-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-darwin-amd64 080c011f635bdcea3f3dee1e499c3ce23f225ef03ccce3aaed848ed38a571821
+binary host-lint 0.18.1 darwin-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-darwin-arm64 9be666fac8c9ae622ca5fe49194ebfb2bd8dd7e1beb73a9e5b378d449b1708c1
+binary host-lint 0.18.1 linux-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-linux-amd64 5ea6e94d17e7a860c9809728eee988f23caffe45e2d958628835fd44271ec645
+binary host-lint 0.18.1 linux-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-linux-arm64 f8955d51df3dd05ef54284810fa4069bbf1700f2fa8c168fefdcb159c4195030
+binary host-lint 0.18.1 windows-amd64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-windows-amd64.exe dd2f3d349cbf118ec9cf36cb62c5c4f13c83e687ac30628f673cc1f13d121b72
+binary host-lint 0.18.1 windows-arm64 https://github.com/connollydavid/host-lint/releases/download/v0.18.1/host-lint-windows-arm64.exe 975e8ad932b56bbfb313c7ca66566e2678448b778ed1eb561420fa2d3cf00555
