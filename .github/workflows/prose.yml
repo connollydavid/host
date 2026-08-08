@@ -22,6 +22,6 @@ jobs:
       # under the reconciled rules its prose is clean with no declaration at all (call/0051).
       # The host reads every pin like this one and reports any sitting below its anchor.
       - name: Install host-lifecycle (pinned)
-        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 2ae8b1e911b89a169144051bcb22fc13b3d22e50 --root "$HOME/.local"
+        run: cargo install --locked --git https://github.com/connollydavid/host-lifecycle --rev 2ae8b1e911b89a169144051bcb22fc13b3d22e50 --root "$HOME/.local"
       - name: Prose gate (zero tropes in authored docs)
         run: "$HOME/.local/bin/host-lifecycle prose ."

@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install allium-cli (pinned 3.5.0)
-        run: cargo install allium-cli --version 3.5.0
+        run: cargo install --locked allium-cli --version 3.5.0
       - name: allium check
         run: allium check host-install.allium
       - name: allium analyse
@@ -27,7 +27,7 @@ jobs:
       # shell test function. An earlier one reports every behavioural obligation
       # here as missing a test, because the tests are shell rather than Rust.
       - name: Install host-lifecycle (pinned v0.47.1)
-        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 8c18a3807a021f15f37114b55cf6c3769e6c21a7 --root "$HOME/.local"
+        run: cargo install --locked --git https://github.com/connollydavid/host-lifecycle --rev 8c18a3807a021f15f37114b55cf6c3769e6c21a7 --root "$HOME/.local"
       - name: Discharge obligations (every obligation dispositioned, every test real)
         run: "$HOME/.local/bin/host-lifecycle obligations host-install.allium --tests tests --strict-discharge"
 
