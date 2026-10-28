@@ -168,7 +168,7 @@ set this methodology is verified against. Install each:
   (`elicit`/`distill`/`tend`/`weed`/`propagate`) come from the `tools/allium`
   submodule via `link-skills.sh`; author and maintain `.allium` through them, not
   by hand (Claude Code users may instead `/plugin install allium`). The `.allium`
-  specs are checked by the `allium` CLI: `cargo install allium-cli@3.4.2`, or
+  specs are checked by the `allium` CLI: `cargo install allium-cli@3.4.2 --locked`, or
   `brew tap juxt/allium && brew install allium`.
 - **specula** (timing and concurrency lane, TLA+): its TLA+ workflow skills also
   come from the `tools/specula` submodule. The `.tla` specs are model-checked by
